@@ -338,10 +338,12 @@ module Slack
         return unless slack_user_id
 
         user = User.find_by(slack_user_id: slack_user_id)
-        return unless user
-
-        view = Slack::HomeTabBuilder.new(user).build
-        Slack::Client.views_publish(user_id: user.slack_user_id, view: view)
+        view = if user
+                 Slack::HomeTabBuilder.new(user).build
+        else
+                 Slack::HomeTabBuilder.build_not_connected(slack_user_id)
+        end
+        Slack::Client.views_publish(user_id: slack_user_id, view: view)
       end
 
       def handle_slash_commands(data, ws)

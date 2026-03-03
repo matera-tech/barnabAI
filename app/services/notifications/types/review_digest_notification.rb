@@ -61,14 +61,14 @@ module Notifications
 
       def build_review_digest_prompt(pr_details)
         [
-          { role: "system", content: <<~PROMPT.strip },
-            You summarize code reviews for the PR author. You receive the full review
-            including inline comments with their diff context. Produce a concise,
-            actionable summary in Slack mrkdwn format. Group feedback by theme.
-            Highlight blocking issues vs suggestions. Do not repeat diff code verbatim.
-            Do not use headers.
-          PROMPT
+          { role: "system", content: ContextBuilderService::GENERAL_GUIDELINES.join("\n") },
           { role: "user", content: <<~CONTENT.strip }
+            Summarize code reviews for the PR author.
+            You receive the full review including inline comments with their diff context.
+            Produce a concise, actionable summary.
+            Group feedback by theme.
+            Highlight blocking issues vs suggestions. Do not repeat diff code verbatim.
+            
             PR: #{pr_details[:meta][:title]} (#{repo_full_name}##{pr_number})
             Reviewer: #{reviewer_login} | Verdict: #{review_state}
 

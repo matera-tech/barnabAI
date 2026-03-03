@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Actions::SearchPullRequestsAction < Actions::BaseAction
+class Actions::Github::SearchPullRequestsAction < Actions::BaseAction
   include Actions::HasFunctionMetadata
 
   function_code "github_search_pull_requests"

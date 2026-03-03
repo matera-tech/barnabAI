@@ -7,7 +7,8 @@ class GithubWebhooksController < ApplicationController
   def create
     event_type = request.headers["X-GitHub-Event"]
     delivery_id = request.headers["X-GitHub-Delivery"]
-    payload = request.request_parameters.presence || JSON.parse(request.body.read)
+    raw_payload = request.request_parameters.presence || JSON.parse(request.body.read)
+    payload = JSON.parse(raw_payload["payload"]) if raw_payload["payload"].is_a?(String)
 
     Rails.logger.info("Received GitHub webhook: event=#{event_type}, delivery=#{delivery_id}")
 
@@ -32,5 +33,3 @@ class GithubWebhooksController < ApplicationController
     head :bad_request
   end
 end
-
-

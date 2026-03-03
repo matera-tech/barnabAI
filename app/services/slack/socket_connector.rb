@@ -298,8 +298,9 @@ module Slack
 
         case event["type"]
         when "app_mention"
-          Rails.logger.info("Processing app_mention event")
           handle_app_mention(event, team_id)
+        when "app_home_opened"
+          handle_app_home_opened(event)
         when "message"
           # Skip message subtypes (message_changed, message_deleted, etc.)
           # We only want to process actual new messages
@@ -318,9 +319,29 @@ module Slack
       end
 
       def handle_interactive(data, ws)
-        # Handle interactive components (buttons, modals, etc.)
-        # Acknowledge if needed
         acknowledge_event(ws, data["envelope_id"]) if data["envelope_id"]
+
+        payload = data["payload"]
+        return unless payload && payload["type"] == "block_actions"
+
+        slack_user_id = payload.dig("user", "id")
+        user = User.find_by(slack_user_id: slack_user_id)
+        return unless user
+
+        (payload["actions"] || []).each do |action|
+          Slack::Interactions::Dispatcher.dispatch(user: user, action: action, payload: payload)
+        end
+      end
+
+      def handle_app_home_opened(event)
+        slack_user_id = event["user"]
+        return unless slack_user_id
+
+        user = User.find_by(slack_user_id: slack_user_id)
+        return unless user
+
+        view = Slack::HomeTabBuilder.new(user).build
+        Slack::Client.views_publish(user_id: user.slack_user_id, view: view)
       end
 
       def handle_slash_commands(data, ws)
@@ -415,8 +436,6 @@ module Slack
           return
         end
 
-        # Only handle messages in threads (where we have PR context)
-        # or direct messages
         channel_type = event_data["channel_type"]
         thread_ts = event_data["thread_ts"]
 

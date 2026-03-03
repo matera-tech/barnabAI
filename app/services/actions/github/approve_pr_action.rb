@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-class Actions::ClosePRAction < Actions::BaseAction
+class Actions::Github::ApprovePRAction < Actions::BaseAction
   include Actions::HasFunctionMetadata
 
-  function_code "github_close_pr"
-  function_description "Close a pull request without merging. Use this when the user wants to close a PR."
+  function_code "github_approve_pr"
+  function_description "Approve a pull request review. Use this when the user wants to approve a PR, either by explicitly saying 'approve' or by expressing agreement/support for the changes in the PR."
   function_parameters({
                         type: "object",
                         properties: {
@@ -18,7 +18,7 @@ class Actions::ClosePRAction < Actions::BaseAction
                           },
                           message: {
                             type: "string",
-                            description: "Optional reason for closing the PR."
+                            description: "Optional reason for approving the PR."
                           },
                         },
                         required: ["pr_number", "repository"]
@@ -26,17 +26,20 @@ class Actions::ClosePRAction < Actions::BaseAction
 
   def execute(parameters)
     pr_number = parameters[:pr_number]
+    body = parameters[:message]
     raise ArgumentError, "PR number is required" unless pr_number
 
     repository = parameters[:repository]
     raise ArgumentError, "Repository is required" unless repository
 
-    message = parameters[:message]
     client = Octokit::Client.new(access_token: @user.primary_github_token.token)
-    comment_response = client.add_comment(repository, pr_number, message) if message.present?
-    client.close_pull_request(repository, pr_number)
+    response = client.create_pull_request_review(
+      repository,
+      pr_number,
+      event: "APPROVE",
+      body: body
+    )
 
-    url = comment_response&.html_url || "https://github.com/#{repository}/pull/#{pr_number}"
-    "Closed <#{url}|PR ##{pr_number}> successfully."
+    "Approved <#{response.html_url}|PR ##{pr_number}> successfully."
   end
 end

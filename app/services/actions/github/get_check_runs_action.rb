@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Actions::GetCheckRunsAction < Actions::BaseAction
+class Actions::Github::GetCheckRunsAction < Actions::BaseAction
   include Actions::HasFunctionMetadata
 
   function_code "github_get_check_runs"

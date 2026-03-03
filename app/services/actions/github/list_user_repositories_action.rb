@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Actions::ListUserRepositoriesAction < Actions::BaseAction
+class Actions::Github::ListUserRepositoriesAction < Actions::BaseAction
   include Actions::HasFunctionMetadata
 
   function_code "github_user_repositories"
@@ -15,4 +15,3 @@ class Actions::ListUserRepositoriesAction < Actions::BaseAction
     github_client.list_user_repositories(limit: 100)
   end
 end
-

@@ -58,6 +58,10 @@ module Slack
       self
     end
 
+    def add_divider
+      @blocks << { type: "divider" }
+    end
+
     # Convert to hash for Slack API
     def to_h
       result = {}

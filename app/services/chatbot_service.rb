@@ -19,21 +19,25 @@ class ChatbotService
     context = build_initial_context(user_message, channel_id:, thread_ts:, message_ts:)
 
     agent = ::MCPAgent.new(@user, [
-      Actions::ApprovePRAction,
-      Actions::ClosePRAction,
-      Actions::MergePRAction,
-      Actions::CreateCommentAction,
-      Actions::RespondToCommentAction,
-      Actions::RunWorkflowAction,
-      Actions::GetPRDetailsAction,
-      Actions::GetCheckRunsAction,
-      Actions::SearchPullRequestsAction,
-      Actions::SummarizeMyCurrentWorkAction,
-      Actions::ListUserRepositoriesAction,
+      Actions::Github::ApprovePRAction,
+      Actions::Github::ClosePRAction,
+      Actions::Github::MergePRAction,
+      Actions::Github::CreateCommentAction,
+      Actions::Github::RespondToCommentAction,
+      Actions::Github::RunWorkflowAction,
+      Actions::Github::GetPRDetailsAction,
+      Actions::Github::GetCheckRunsAction,
+      Actions::Github::SearchPullRequestsAction,
+      Actions::Github::ListUserRepositoriesAction,
+      Actions::Github::ListTeamsAction,
+      Actions::Github::ReopenPRAction,
+      Actions::Database::ListPrsByTeamsAction,
+      Recipes::SummarizeMyCurrentWorkRecipe,
+      Recipes::SummarizePrsByTeamsRecipe,
     ])
     message = agent.run(context)
     # Reply in thread for channel messages, channel ids for direct messages start with 'D...'
-    thread_ts = message_ts if channel_id.start_with?('D') && thread_ts.nil?
+    thread_ts = message_ts if thread_ts.nil? && !channel_id.start_with?('D')
 
     Slack::Client.send_message(
       channel: channel_id,

@@ -3,7 +3,7 @@
 class Github::PullRequestFetcher
   include Github::HasGraphqlQuery
 
-  PULL_REQUEST_FIELDS = <<~FIELDS.strip
+  PULL_REQUEST_FIELDS = <<~FIELDS
     title
     url
     body
@@ -64,6 +64,17 @@ class Github::PullRequestFetcher
     }
   FIELDS
 
+
+  SINGLE_PULL_QUERY = <<~GRAPHQL
+    query($owner: String!, $name: String!, $number: Int!) {
+      repository(owner: $owner, name: $name) {
+        pullRequest(number: $number) {
+          #{PULL_REQUEST_FIELDS}
+        }
+      }
+    }
+  GRAPHQL
+
   NODES_QUERY = <<~GRAPHQL
     query($ids: [ID!]!) {
       nodes(ids: $ids) {
@@ -74,28 +85,15 @@ class Github::PullRequestFetcher
     }
   GRAPHQL
 
-  attr_reader :github_token
-
   def initialize(user)
     @github_token = user.primary_github_token.token
   end
 
-  graphql_query :single_pr, <<~GRAPHQL
-    query($owner: String!, $name: String!, $number: Int!) {
-      repository(owner: $owner, name: $name) {
-        pullRequest(number: $number) {
-          #{PULL_REQUEST_FIELDS}
-        }
-      }
-    }
-  GRAPHQL
-
-  graphql_query :nodes, NODES_QUERY
 
   def call(repo_full_name, pr_number)
     owner, name = repo_full_name.split('/')
 
-    raw_response = run_graphql(:single_pr, owner: owner, name: name, number: pr_number.to_i)
+    raw_response = run_graphql(@github_token, SINGLE_PULL_QUERY, owner: owner, name: name, number: pr_number.to_i)
     pr_data = raw_response.dig(:repository, :pullRequest)
 
     return nil unless pr_data
@@ -109,7 +107,7 @@ class Github::PullRequestFetcher
     ids = Array(node_ids).map(&:to_s).reject(&:blank?).uniq.first(100)
     return [] if ids.empty?
 
-    raw_response = run_graphql(:nodes, { ids: ids })
+    raw_response = run_graphql(@github_token, NODES_QUERY, { ids: ids })
     nodes = raw_response[:nodes] || []
     nodes.filter_map { |node| parse_pr_data(node) if node.present? }
   end

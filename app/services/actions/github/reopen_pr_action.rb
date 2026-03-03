@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
-class Actions::GetPRDetailsAction < Actions::BaseAction
+class Actions::Github::ReopenPRAction < Actions::BaseAction
   include Actions::HasFunctionMetadata
 
-  function_code "github_get_pr_details"
-  function_description "Get detailed information about a pull request including title, state, reviews, CI checks, and discussions. Use this when you need to analyze or provide information about a PR."
+  function_code "github_reopen_pr"
+  function_description "Reopen a previously closed pull request. Use this when the user wants to reopen a PR that was closed without merging."
   function_parameters({
                         type: "object",
                         properties: {
                           pr_number: {
                             type: "integer",
-                            description: "The PR number to fetch details for. Can often be extracted from a URL or the user messages."
+                            description: "The PR number to reopen. Can often be extracted from a URL or the user messages."
                           },
                           repository: {
                             type: "string",
@@ -27,11 +27,9 @@ class Actions::GetPRDetailsAction < Actions::BaseAction
     raise ArgumentError, "PR number is required" unless pr_number
     raise ArgumentError, "Repository is required" unless repository
 
-    fetcher = Github::PullRequestFetcher.new(user)
-    pr_details = fetcher.call(repository, pr_number)
+    client = Octokit::Client.new(access_token: @user.primary_github_token.token)
+    client.update_pull_request(repository, pr_number, state: "open")
 
-    raise "Pull request ##{pr_number} not found in repository #{repository}" unless pr_details
-
-    pr_details
+    "Reopened <https://github.com/#{repository}/pull/#{pr_number}|PR ##{pr_number}> successfully."
   end
 end

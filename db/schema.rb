@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_03_191536) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_03_112516) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -28,7 +28,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_03_191536) do
     t.index ["user_id"], name: "index_github_tokens_on_user_id"
   end
 
+  create_table "notification_preferences", force: :cascade do |t|
+    t.jsonb "config", default: {}
+    t.datetime "created_at", null: false
+    t.boolean "enabled", default: true, null: false
+    t.string "notification_type", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id", "notification_type"], name: "idx_on_user_id_notification_type_2ab4363e9b", unique: true
+    t.index ["user_id"], name: "index_notification_preferences_on_user_id"
+  end
+
   create_table "pull_requests", force: :cascade do |t|
+    t.string "assignees", default: [], array: true
     t.string "author"
     t.string "base_branch"
     t.string "base_sha"
@@ -194,6 +206,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_03_191536) do
   end
 
   add_foreign_key "github_tokens", "users"
+  add_foreign_key "notification_preferences", "users"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

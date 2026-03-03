@@ -9,15 +9,19 @@ module Github
     end
 
     class << self
+      # @param filters [Hash] A hash of search filters (e.g., { is: "pr", author: "@me" })
       def to_query(filters)
         builder = new
-        filters.each { |key, value| builder.where("#{key}:#{value}") }
+        filters.each do |key, value|
+          next builder.where("#{value.to_s.strip}") if key.to_sym == :label
+          builder.where("#{key}:#{value}")
+        end
         builder.build
       end
     end
 
     # Add a WHERE condition (AND operator)
-    # @param condition [String] The search condition (e.g., "is:pr", "author:gogaz")
+    # @param condition [String] The search condition (e.g., "is:pr", "author:@me")
     # @return [QueryBuilder] Returns self for method chaining
     def where(condition)
       @where_conditions << condition.to_s.strip

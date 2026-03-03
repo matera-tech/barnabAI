@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-class Actions::CreateCommentAction < Actions::BaseAction
+class Actions::Github::ClosePRAction < Actions::BaseAction
   include Actions::HasFunctionMetadata
 
-  function_code "github_add_new_comment_on_pr"
-  function_description "Create a new comment on a pull request. Use this when the user wants to add a general comment to the PR discussion."
+  function_code "github_close_pr"
+  function_description "Close a pull request without merging. Use this when the user wants to close a PR."
   function_parameters({
                         type: "object",
                         properties: {
@@ -18,24 +18,25 @@ class Actions::CreateCommentAction < Actions::BaseAction
                           },
                           message: {
                             type: "string",
-                            description: "The text to send."
+                            description: "Optional reason for closing the PR."
                           },
                         },
-                        required: ["pr_number", "repository", "message"]
+                        required: ["pr_number", "repository"]
                       })
 
   def execute(parameters)
-    message = parameters[:message]
     pr_number = parameters[:pr_number]
-    repository = parameters[:repository]
-
-    raise ArgumentError, "Message is required" unless message
     raise ArgumentError, "PR number is required" unless pr_number
+
+    repository = parameters[:repository]
     raise ArgumentError, "Repository is required" unless repository
 
+    message = parameters[:message]
     client = Octokit::Client.new(access_token: @user.primary_github_token.token)
-    response = client.add_comment(repository, pr_number, message)
+    comment_response = client.add_comment(repository, pr_number, message) if message.present?
+    client.close_pull_request(repository, pr_number)
 
-    "Comment posted to #{response.html_url}"
+    url = comment_response&.html_url || "https://github.com/#{repository}/pull/#{pr_number}"
+    "Closed <#{url}|PR ##{pr_number}> successfully."
   end
 end

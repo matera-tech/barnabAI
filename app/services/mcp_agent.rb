@@ -10,8 +10,6 @@ class MCPAgent
     loop do
       prompt = context.build_structured_prompt(functions: @functions)
       response = @ai_provider.structured_output(prompt)
-      puts '=' * 80
-      puts response.inspect
 
       return response[:text] if response[:tools].blank?
 
@@ -33,13 +31,15 @@ class MCPAgent
       parameters = parameters
       begin
         result = fn.execute(call[:parameters])
+        context.add_function_call(call[:name], call[:arguments], result)
       rescue StandardError => e
         context.add_function_call(call[:name], call[:arguments], e.message)
+        Rails.logger.error(e.message)
+        Rails.logger.error(e.backtrace.join("\n"))
         puts e.message
         puts e.backtrace.join("\n")
         next
       end
-      context.add_function_call(call[:name], call[:arguments], result)
       klass.function_stops_reflexion?
     end
   end

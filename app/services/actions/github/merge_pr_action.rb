@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Actions::MergePRAction < Actions::BaseAction
+class Actions::Github::MergePRAction < Actions::BaseAction
   include Actions::HasFunctionMetadata
 
   function_code "github_merge_pr"
@@ -34,10 +34,10 @@ class Actions::MergePRAction < Actions::BaseAction
                       })
 
   def execute(parameters)
-    pr_number = parameters[:pr_number]
-    repository = parameters[:repository]
-    merge_method = parameters[:merge_method] || "squash"
-    commit_title = parameters[:commit_title]
+    pr_number      = parameters[:pr_number]
+    repository     = parameters[:repository]
+    merge_method   = parameters[:merge_method] || "squash"
+    commit_title   = parameters[:commit_title]
     commit_message = parameters[:commit_message]
 
     raise ArgumentError, "PR number is required" unless pr_number
@@ -46,8 +46,8 @@ class Actions::MergePRAction < Actions::BaseAction
     github_client.merge_pull_request(
       repository,
       pr_number,
-      merge_method: merge_method,
-      commit_title: commit_title,
+      merge_method:,
+      commit_title:,
       commit_message: commit_message || "Merged by BarnabAI"
     )
 

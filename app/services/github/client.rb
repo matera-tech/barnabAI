@@ -71,7 +71,7 @@ module Github
 
     # Reply to a pull request comment
     def create_pull_request_comment_reply(repository, pr_number, body, comment_id)
-      client.create_pull_request_comment_reply(repository, comment_id, body)
+      client.create_pull_request_comment_reply(repository, pr_number, body, comment_id)
     end
 
     # Get all reviews on a PR (approvals, changes requested, etc.)
@@ -211,6 +211,18 @@ module Github
       repos.uniq
     end
 
+    def list_teams(username: nil)
+      fetcher = Github::TeamsFetcher.new(@user)
+      if username.present?
+        fetcher.call(username)
+      else
+        fetcher.all_org_teams(@user.primary_github_token.github_username)
+      end
+    rescue Octokit::Error, RuntimeError => e
+      Rails.logger.error("Failed to list teams: #{e.message}")
+      []
+    end
+
     # Disambiguate repository name (find full name from short name)
     def disambiguate_repository(repo_name)
       # If already in full format (owner/repo), return as is
@@ -262,5 +274,6 @@ module Github
         Octokit::Client.new(access_token: token)
       end
     end
+
   end
 end

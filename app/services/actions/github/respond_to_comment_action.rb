@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-class Actions::RespondToCommentAction < Actions::BaseAction
+class Actions::Github::RespondToCommentAction < Actions::BaseAction
   include Actions::HasFunctionMetadata
 
-  function_code "respond_to_comment"
+  function_code "github_respond_to_comment"
   function_description "Reply to a review comment on a pull request. Use this when the user wants to respond to a specific comment."
   function_parameters({
                         type: "object",

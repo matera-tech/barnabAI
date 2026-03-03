@@ -9,9 +9,9 @@ class ProcessGithubWebhookJob < ApplicationJob
     case event_type
     when 'pull_request'
       handle_pull_request_event(payload)
-    else
-      Rails.logger.info("Ignoring unhandled GitHub event type: #{event_type}")
     end
+
+    Notifications::Dispatcher.dispatch(event_type, payload)
   end
 
   private
@@ -20,14 +20,15 @@ class ProcessGithubWebhookJob < ApplicationJob
     action = payload['action']
     pr_data = payload['pull_request']
     repo_data = payload['repository']
-
-    return unless action == 'closed' && pr_data['merged']
-
     repository_full_name = repo_data['full_name']
+
     pull_request = create_or_update_pull_request(repository_full_name, pr_data)
     return unless pull_request
 
-    UpdatePullRequestTeamsJob.perform_later(repository_full_name, pull_request.number)
+    if action == 'closed' && pr_data['merged']
+      sender_login = payload.dig('sender', 'login')
+      UpdatePullRequestTeamsJob.perform_later(repository_full_name, pull_request.number, sender_login: sender_login)
+    end
   end
 
   def create_or_update_pull_request(repository_full_name, pr_data)
@@ -36,20 +37,7 @@ class ProcessGithubWebhookJob < ApplicationJob
       number: pr_data['number']
     )
 
-    pull_request.assign_attributes(
-      github_pr_id: pr_data['id'].to_s,
-      title: pr_data['title'],
-      body: pr_data['body'],
-      state: pr_data['state'],
-      author: pr_data.dig('user', 'login'),
-      base_branch: pr_data.dig('base', 'ref'),
-      base_sha: pr_data.dig('base', 'sha'),
-      head_branch: pr_data.dig('head', 'ref'),
-      head_sha: pr_data.dig('head', 'sha'),
-      github_created_at: pr_data['created_at'],
-      github_updated_at: pr_data['updated_at'],
-      github_merged_at: pr_data['merged_at']
-    )
+    pull_request.apply_pr_data(pr_data)
 
     if pull_request.save
       Rails.logger.info("Saved PR ##{pull_request.number} for #{repository_full_name}")

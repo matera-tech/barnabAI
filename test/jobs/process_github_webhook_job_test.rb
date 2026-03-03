@@ -57,10 +57,14 @@ class ProcessGithubWebhookJobTest < ActiveJob::TestCase
       'repository' => {
         'id' => 12345,
         'full_name' => REPO_FULL_NAME
-      }
+      },
+      'sender' => { 'login' => 'mergeuser' }
     }
 
-    assert_enqueued_with(job: UpdatePullRequestTeamsJob) do
+    assert_enqueued_with(
+      job: UpdatePullRequestTeamsJob,
+      args: [REPO_FULL_NAME, 999, { sender_login: 'mergeuser' }]
+    ) do
       ProcessGithubWebhookJob.perform_now(
         event_type: 'pull_request',
         delivery_id: 'test-delivery',
@@ -104,7 +108,8 @@ class ProcessGithubWebhookJobTest < ActiveJob::TestCase
       'repository' => {
         'id' => 12345,
         'full_name' => REPO_FULL_NAME
-      }
+      },
+      'sender' => { 'login' => 'mergeuser' }
     }
 
     assert_enqueued_with(job: UpdatePullRequestTeamsJob) do

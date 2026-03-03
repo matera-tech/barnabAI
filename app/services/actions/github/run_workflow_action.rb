@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Actions::RunWorkflowAction < Actions::BaseAction
+class Actions::Github::RunWorkflowAction < Actions::BaseAction
   include Actions::HasFunctionMetadata
 
   function_code "run_workflow"

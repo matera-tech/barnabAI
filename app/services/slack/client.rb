@@ -35,9 +35,7 @@ module Slack
         
         options[:thread_ts] = thread_ts if thread_ts
 
-        puts "THIS IS THE SLACK MESSAGE OPTIONS HASH"
-        puts options.inspect
-        puts "END OF OPTIONS HASH"
+        Rails.logger.info(options.inspect)
         response = client.chat_postMessage(options)
 
         if response["ok"]
@@ -210,6 +208,19 @@ module Slack
         Rails.logger.error("Error getting user info for #{user_id}: #{e.message}")
         Rails.logger.error(e.backtrace.join("\n"))
         {}
+      end
+
+      def views_publish(user_id:, view:)
+        bot_token = ENV["SLACK_BOT_TOKEN"]
+        raise "SLACK_BOT_TOKEN not set in environment variables" unless bot_token
+
+        client = Slack::Web::Client.new(token: bot_token)
+
+        client.views_publish(user_id: user_id, view: view)
+      rescue StandardError => e
+        Rails.logger.error("Error publishing home tab for #{user_id}: #{e.message}")
+        Rails.logger.error(e.backtrace.join("\n"))
+        nil
       end
 
       def extract_mentioned_user_ids(text)

@@ -38,7 +38,7 @@ class Github::CheckRunsFetcher
     }
   FRAGMENT
 
-  graphql_query :by_pr, <<~GRAPHQL
+  BY_PR_QUERY = <<~GRAPHQL
     query($owner: String!, $name: String!, $number: Int!) {
       repository(owner: $owner, name: $name) {
         pullRequest(number: $number) {
@@ -54,7 +54,7 @@ class Github::CheckRunsFetcher
     }
   GRAPHQL
 
-  graphql_query :by_sha, <<~GRAPHQL
+  BY_SHA_QUERY = <<~GRAPHQL
     query($owner: String!, $name: String!, $sha: String!) {
       repository(owner: $owner, name: $name) {
         object(expression: $sha) {
@@ -72,14 +72,14 @@ class Github::CheckRunsFetcher
 
   def call_by_pr(repo_full_name, pr_number)
     owner, name = repo_full_name.split("/")
-    response = run_graphql(:by_pr, owner: owner, name: name, number: pr_number.to_i)
+    response = run_graphql(@github_token, BY_PR_QUERY, owner: owner, name: name, number: pr_number.to_i)
     suites = response.dig(:repository, :pullRequest, :commits, :nodes, 0, :commit, :checkSuites, :nodes) || []
     parse_check_suites(suites)
   end
 
   def call_by_sha(repo_full_name, sha)
     owner, name = repo_full_name.split("/")
-    response = run_graphql(:by_sha, owner: owner, name: name, sha: sha)
+    response = run_graphql(@github_token, BY_SHA_QUERY, owner: owner, name: name, sha: sha)
     suites = response.dig(:repository, :object, :checkSuites, :nodes) || []
     parse_check_suites(suites)
   end

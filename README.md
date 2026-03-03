@@ -14,6 +14,7 @@ It was heavily vibe-coded, use at your own risks.
 - 👤 **Per-User GitHub Authentication**: Each user connects their own GitHub account
 - 💬 **Conversational Interface**: Talk to the bot naturally in Slack
 - 🎯 **PR Actions**: Merge, comment, approve, get info, create PRs, run specs, and more
+- 🔔 **Extensible Notification System**: AI-powered notifications with per-user settings via the Slack App Home Tab. Ships with CI failure analysis and PR review digest. Fork-friendly — add custom notification types by dropping a class in `app/services/notifications/types/`.
 
 ## Prerequisites
 
@@ -74,7 +75,14 @@ bin/rails db:create && bin/rails db:migrate
 3. Scroll up and click **Install to Workspace**
 4. Copy the **Bot User OAuth Token** (starts with `xoxb-`) — this is your `SLACK_BOT_TOKEN`
 
-#### 3.3 Enable Socket Mode
+#### 3.3 Enable App Home Tab
+
+1. Go to **App Home** in the sidebar
+2. Toggle **Home Tab** to ON
+
+This enables the notification settings UI — users can toggle notifications on/off from the bot's Home tab in Slack.
+
+#### 3.4 Enable Socket Mode
 
 1. Go to **Socket Mode** in the sidebar
 2. Toggle **Enable Socket Mode** to ON
@@ -83,9 +91,9 @@ bin/rails db:create && bin/rails db:migrate
 5. Add scope: `connections:write`
 6. Copy the **App-Level Token** (starts with `xapp-`)
 
-**Note**: After enabling Socket Mode, make sure to complete step 3.4 (Subscribe to Events) before testing. Socket Mode won't receive events unless they're subscribed.
+**Note**: After enabling Socket Mode, make sure to complete step 3.5 (Subscribe to Events) before testing. Socket Mode won't receive events unless they're subscribed.
 
-#### 3.4 Subscribe to Events (Required)
+#### 3.5 Subscribe to Events (Required)
 
 **Important**: Even when using Socket Mode, you must enable and subscribe to events in your Slack app configuration. Socket Mode only changes how events are delivered (via WebSocket instead of HTTP), but you still need to tell Slack which events to send.
 
@@ -95,11 +103,13 @@ bin/rails db:create && bin/rails db:migrate
 3. In **Subscribe to bot events**, add:
    - `message.im` - Receive direct messages to the bot
    - `app_mention` - Receive mentions of the bot in channels
+   - `app_home_opened` - Render the Home tab with notification settings
 
+4. Enable **Interactivity & Shortcuts** (sidebar) — this is required for the notification toggle checkboxes in the Home tab to work. No Request URL is needed with Socket Mode.
 
-4. Click **Save Changes** at the bottom
+5. Click **Save Changes** at the bottom
 
-5. **Reinstall the app to your workspace**:
+6. **Reinstall the app to your workspace**:
    - Go back to **OAuth & Permissions**
    - Click **Reinstall to Workspace** (or **Install to Workspace** if not yet installed)
    - Authorize the app with the new event subscriptions
@@ -117,7 +127,23 @@ bin/rails db:create && bin/rails db:migrate
 4. Click **Register application**
 5. Copy the **Client ID** and generate a **Client Secret**
 
-### 5. Environment Variables
+### 5. GitHub Webhook Setup
+
+The notification system and PR tracking rely on receiving GitHub webhook events. You need to configure a webhook on each repository (or organization) you want the bot to monitor.
+
+1. Go to your GitHub repository → **Settings** → **Webhooks** → **Add webhook**
+   - For organization-wide coverage, go to your **Organization Settings** → **Webhooks** instead
+2. Fill in:
+   - **Payload URL**: `APP_PROTOCOL://APP_HOST/github/webhooks` (e.g. `https://example.com/github/webhooks`)
+   - **Content type**: `application/json`
+   - **Secret**: *(optional but recommended — not yet enforced by the app)*
+3. Under **Which events would you like to trigger this webhook?**, select **Send me everything**
+   - The app processes `pull_request` events (for PR tracking and assignee updates) and forwards all events to the notification dispatcher. Sending all events ensures current and future notification types work correctly.
+4. Make sure **Active** is checked, then click **Add webhook**
+
+> **Why "Send me everything"?** The notification framework is extensible — built-in types listen to `check_suite` and `pull_request_review` events, and custom notification types added via forks may listen to any event. Sending all events avoids having to reconfigure the webhook each time a new notification type is added.
+
+### 6. Environment Variables
 
 Create a `.env` file in the root directory using `.env.example` as a template:
 
@@ -153,7 +179,7 @@ You can generate the ActiveRecord encryption keys with:
 bin/rails db:encryption:init
 ```
 
-### 6. Run the Application
+### 7. Run the Application
 
 ```bash
 # Start the Rails server
@@ -183,7 +209,7 @@ Slack::SocketConnector.start(app_token: app_token)
 
 You should see connection logs indicating the WebSocket is connected.
 
-### 7. Connect Your GitHub Account
+### 8. Connect Your GitHub Account
 
 Users need to connect their GitHub account to perform actions:
 

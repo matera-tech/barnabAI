@@ -65,7 +65,7 @@ module Notifications
         }.join("\n")
 
         [
-          { role: "system", content: "You analyze CI failures for developers. Be concise and actionable. Output Slack mrkdwn. Do not use headers." },
+          { role: "system", content: ContextBuilderService::GENERAL_GUIDELINES.join("\n") },
           { role: "user", content: "These checks failed in #{repo_full_name}:\n\n#{runs_summary}\n\nPull requests affected:\n#{pr_context}\n\nSummarize what failed, likely root cause, and suggested next steps." }
         ]
       end

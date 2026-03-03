@@ -39,16 +39,24 @@ class Recipes::SummarizeMyCurrentWorkRecipe < Recipes::BaseRecipe
   })
 
   def execute(filters = {})
-    filter_query = Github::QueryBuilder.to_query({ sort: "updated", order: "asc", **filters })
+    filters = (filters || {}).symbolize_keys
+    sort = filters.delete(:sort) || "updated"
+    order = filters.delete(:order) || "asc"
+    search_options = { sort: sort, order: order }
+
+    filter_query = Github::QueryBuilder.to_query(filters)
 
     prs_owned = github_client.search_pull_requests(
-      Github::QueryBuilder.new.where(filter_query).where("is:pr is:open author:@me").build
+      Github::QueryBuilder.new.where(filter_query).where("is:pr is:open author:@me").build,
+      **search_options
     )
     prs_assigned = github_client.search_pull_requests(
-      Github::QueryBuilder.new.where(filter_query).where("is:pr is:open assignee:@me").not("author:@me").build
+      Github::QueryBuilder.new.where(filter_query).where("is:pr is:open assignee:@me").not("author:@me").build,
+      **search_options
     )
     prs_review_requested = github_client.search_pull_requests(
-      Github::QueryBuilder.new.where(filter_query).where("is:pr is:open review-requested:@me").not("author:@me").not("assignee:@me").build
+      Github::QueryBuilder.new.where(filter_query).where("is:pr is:open review-requested:@me").not("author:@me").not("assignee:@me").build,
+      **search_options
     )
 
     all_prs = prs_owned + prs_assigned + prs_review_requested

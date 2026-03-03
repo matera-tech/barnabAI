@@ -44,8 +44,12 @@ module Actions
       def function_stops_reflexion?(value = nil, &block)
         if !value.nil? || block
           @function_stops_reflexion = block || value
-        else
+        elsif instance_variable_defined?(:@function_stops_reflexion)
           resolve_value(@function_stops_reflexion) || false
+        elsif superclass.respond_to?(:function_stops_reflexion?)
+          superclass.function_stops_reflexion?
+        else
+          false
         end
       end
 

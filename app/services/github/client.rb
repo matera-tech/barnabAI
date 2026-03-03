@@ -10,8 +10,11 @@ module Github
     end
 
     # Search for pull requests using GitHub search API (returns full PR objects, one API call per result)
-    def search_pull_requests(query, limit: 50)
-      results = client.search_issues(query, per_page: limit)
+    def search_pull_requests(query, limit: 50, sort: nil, order: nil)
+      options = { per_page: limit }
+      options[:sort] = sort if sort
+      options[:order] = order if order
+      results = client.search_issues(query, **options)
       results.items.filter_map do |issue|
         repo_full_name = issue.repository&.full_name || extract_repo_from_url(issue.repository_url || issue.html_url)
         next unless repo_full_name

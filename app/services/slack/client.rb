@@ -33,6 +33,10 @@ module Slack
           options[:text] = message_options[:text]
         end
         
+        if message_options[:attachments].present?
+          options[:attachments] = message_options[:attachments]
+        end
+
         options[:thread_ts] = thread_ts if thread_ts
 
         Rails.logger.info(options.inspect)

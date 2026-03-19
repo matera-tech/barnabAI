@@ -13,7 +13,7 @@ gem "puma", ">= 5.0"
 gem "solid_queue"
 
 # Use Active Model has_secure_password
-gem "bcrypt", "~> 3.1.7"
+gem "bcrypt", "~> 3.1.22"
 
 # PostgreSQL adapter
 gem "pg", "~> 1.5"
